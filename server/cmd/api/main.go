@@ -10,10 +10,16 @@ import (
 
 func main() {
 
-	cfg := api.Config{Addr: ":8080", UploadDir: "data/uploads"}
+	cfg := api.Config{Addr: ":8080", UploadDir: "data/uploads", MaxUploadBytes: 1 << 30}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	srv := api.NewServer(cfg)
+
+	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
+      logger.Error("creating upload dir", "err", err)
+      os.Exit(1)
+	}
+
+	srv := api.NewServer(cfg, logger)
 
 	logger.Info("listening", "addr", cfg.Addr)
 
