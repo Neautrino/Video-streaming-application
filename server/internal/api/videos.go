@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
@@ -52,4 +54,25 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"id" : id})
+}
+
+func (s *Server) getVideoById(w http.ResponseWriter, r * http.Request) {
+	id := chi.URLParam(r, "id")
+
+	if raw, err := hex.DecodeString(id); err != nil || len(raw) != 16 {
+		s.logger.Error("Invalid Video Id", "err", err)
+		http.Error(w, "Invalid Video Id", http.StatusBadRequest)
+		return
+	}
+	
+	path := filepath.Join(s.cfg.UploadDir, id+".*");
+	matches, err := filepath.Glob(path)
+
+	if err != nil || len(matches)==0 {
+		s.logger.Error("File not found", "err", err)
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
+	http.ServeFile(w, r, matches[0])
 }
