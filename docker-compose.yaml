@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: streaming_dev
+      POSTGRES_DB: streaming
+    ports:
+      - "5432:5432"
+    volumes:
+      - streaming_pgdata:/var/lib/postgresql/data
+
+volumes:
+  streaming_pgdata:

@@ -1,15 +1,24 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/neautrino/video-streaming/internal/api"
+	"github.com/neautrino/video-streaming/internal/video"
 )
 
-func main() {
+func env(key, fallback string) string {
+      if v := os.Getenv(key); v != "" {
+              return v
+      }
+      return fallback
+}
 
+func main() {
 	cfg := api.Config{Addr: ":8080", UploadDir: "data/uploads", MaxUploadBytes: 1 << 30}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -17,6 +26,28 @@ func main() {
 	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
       logger.Error("creating upload dir", "err", err)
       os.Exit(1)
+	}
+
+	dbURL := env("DATABASE_URL", "postgres://postgres:streaming_dev@localhost:5432/streaming")
+	pool, err := pgxpool.New(context.Background(), dbURL)
+	if err != nil {
+		logger.Error("Database Connection Failed", "err", err)
+		os.Exit(1)
+	}
+	
+	defer pool.Close()
+
+	if err = pool.Ping(context.Background()); err != nil {
+		logger.Error("Database Ping Failed", "err", err)
+		os.Exit(1)
+	}
+
+	logger.Info("Database connection successfully")
+
+	repo := video.NewRepository(pool) 
+	if err := repo.Init(context.Background()); err != nil {
+		logger.Error("Database Table Initialization Failed", "err", err)
+		os.Exit(1)
 	}
 
 	srv := api.NewServer(cfg, logger)
