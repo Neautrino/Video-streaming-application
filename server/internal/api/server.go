@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/neautrino/video-streaming/internal/storage"
 	"github.com/neautrino/video-streaming/internal/video"
 )
 
@@ -18,14 +19,16 @@ type Server struct {
 	router *chi.Mux
 	logger *slog.Logger
 	repo *video.Repository
+	storage *storage.Client
 }
 
-func NewServer(cfg Config, logger *slog.Logger, repo *video.Repository) *Server {
+func NewServer(cfg Config, logger *slog.Logger, repo *video.Repository, storage *storage.Client) *Server {
 	s := &Server{
 		cfg: cfg,
 		router: chi.NewRouter(),
 		logger: logger.With("component", "api"),
 		repo: repo,
+		storage: storage,
 	}
 
 	s.routes()
