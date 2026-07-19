@@ -19,14 +19,9 @@ func env(key, fallback string) string {
 }
 
 func main() {
-	cfg := api.Config{Addr: ":8080", UploadDir: "data/uploads", MaxUploadBytes: 1 << 30}
+	cfg := api.Config{Addr: ":8080", MaxVideoBytes: 1 << 30}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
-      logger.Error("creating upload dir", "err", err)
-      os.Exit(1)
-	}
 
 	dbURL := env("DATABASE_URL", "postgres://postgres:streaming_dev@localhost:5432/streaming")
 	pool, err := pgxpool.New(context.Background(), dbURL)

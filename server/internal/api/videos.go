@@ -4,27 +4,61 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"io"
+	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/neautrino/video-streaming/internal/video"
 )
 
-func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, s.cfg.MaxUploadBytes)
+type createVideoRequest struct {
+	Title string `json:"title"`
+	Description string `json:"description"`
+	Filename string `json:"filename"`
+	Size int64 `json:"size"`
+	ContentType string `json:"content_type"`
+}
 
-	file, header, err := r.FormFile("file")
-	if err != nil {
-		var maxErr *http.MaxBytesError
-		if errors.As(err, &maxErr) {
-			s.logger.Error("File too large")
-			http.Error(w, "file too large", http.StatusRequestEntityTooLarge)
-			return
-		}
-		http.Error(w, "Missing or Invalid 'file' field", http.StatusBadRequest)
+func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	var req createVideoRequest
+	if err := dec.Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Title == "" {
+		http.Error(w, "title is required", http.StatusBadRequest)
+		return
+	}
+
+	if req.Filename == "" {
+		http.Error(w, "filename is required", http.StatusBadRequest)
+		return
+	}
+
+	if req.Size <= 0 {
+		http.Error(w, "size must be greater than 0", http.StatusBadRequest)
+		return
+	}
+
+	if req.Size > s.cfg.MaxVideoBytes {
+		http.Error(w, fmt.Sprintf("file size must be less than %d bytes", s.cfg.MaxVideoBytes), http.StatusRequestHeaderFieldsTooLarge)
+		return
+	}
+
+	if req.ContentType == "" {
+		http.Error(w, "content_type is required", http.StatusBadRequest)
+		return
+	}
+
+	if !strings.HasPrefix(req.ContentType, "video/") {
+		http.Error(w, "content_type must be video", http.StatusBadRequest)
 		return
 	}
 
@@ -32,47 +66,24 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	rand.Read(buf)
 	id := hex.EncodeToString(buf)
 
-	defer file.Close()
-
-	path := filepath.Join(s.cfg.UploadDir, id+filepath.Ext(header.Filename))
-	dist, err := os.Create(path)
-
-	if err != nil {
-		s.logger.Error("creating upload path", "err", err)
-		http.Error(w, "Creating upload path", http.StatusInternalServerError)
-		return
+	v := &video.Video{
+		ID: id,
+		Title: req.Title,
+		Description: req.Description,
+		OriginalFileName: req.Filename,
+		ContentType: req.ContentType,
+		Size: req.Size,
+		StorageKey: id + filepath.Ext(req.Filename),
+		Status: video.StatusUploading,
 	}
-	
-	defer dist.Close()
 
-	if _, err := io.Copy(dist, file); err != nil {
-		s.logger.Error("Uploading File", "err", err)
-		http.Error(w, "Uploading File", http.StatusInternalServerError)
+	if err := s.repo.Create(r.Context(), v); err != nil {
+		s.logger.Error("creating video record", "err", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"id" : id})
-}
-
-func (s *Server) getVideoById(w http.ResponseWriter, r * http.Request) {
-	id := chi.URLParam(r, "id")
-
-	if raw, err := hex.DecodeString(id); err != nil || len(raw) != 16 {
-		s.logger.Error("Invalid Video Id", "err", err)
-		http.Error(w, "Invalid Video Id", http.StatusBadRequest)
-		return
-	}
-	
-	path := filepath.Join(s.cfg.UploadDir, id+".*");
-	matches, err := filepath.Glob(path)
-
-	if err != nil || len(matches)==0 {
-		s.logger.Error("File not found", "err", err)
-		http.Error(w, "File not found", http.StatusNotFound)
-		return
-	}
-
-	http.ServeFile(w, r, matches[0])
+	json.NewEncoder(w).Encode(map[string]string{"id": v.ID, "presigned-url": "stay tuned"})
 }

@@ -10,8 +10,7 @@ import (
 
 type Config struct {
 	Addr string
-	UploadDir string
-	MaxUploadBytes int64
+	MaxVideoBytes int64
 }
 
 type Server struct {
