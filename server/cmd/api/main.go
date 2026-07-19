@@ -44,13 +44,9 @@ func main() {
 
 	logger.Info("Database connection successfully")
 
-	repo := video.NewRepository(pool) 
-	if err := repo.Init(context.Background()); err != nil {
-		logger.Error("Database Table Initialization Failed", "err", err)
-		os.Exit(1)
-	}
+	repo := video.NewRepository(pool)
 
-	srv := api.NewServer(cfg, logger)
+	srv := api.NewServer(cfg, logger, repo)
 
 	logger.Info("listening", "addr", cfg.Addr)
 
