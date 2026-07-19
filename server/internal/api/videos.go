@@ -83,7 +83,14 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	url, err := s.storage.PresignPut(r.Context(), v.StorageKey)
+	if err != nil {
+		s.logger.Error("presigning upload url", "err", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"id": v.ID, "presigned-url": "stay tuned"})
+	json.NewEncoder(w).Encode(map[string]string{"id": v.ID, "upload_url": url})
 }
