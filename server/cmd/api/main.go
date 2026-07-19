@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 	"github.com/neautrino/video-streaming/internal/api"
 	"github.com/neautrino/video-streaming/internal/video"
 )
@@ -19,6 +20,8 @@ func env(key, fallback string) string {
 }
 
 func main() {
+	_ = godotenv.Load()
+	
 	cfg := api.Config{Addr: ":8080", MaxVideoBytes: 1 << 30}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
