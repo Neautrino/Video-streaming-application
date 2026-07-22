@@ -1,10 +1,18 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-createRoot(document.getElementById('root')!).render(
+import "./index.css";
+import App from "./App.tsx";
+
+// One client for the whole app, created outside the component tree so it
+// isn't recreated on every render.
+const queryClient = new QueryClient();
+
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
   </StrictMode>,
-)
+);
