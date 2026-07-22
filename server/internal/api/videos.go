@@ -20,6 +20,8 @@ type createVideoRequest struct {
 	ContentType string `json:"content_type"`
 }
 
+const uploadPrefix = "uploads/"
+
 func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
@@ -73,7 +75,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		OriginalFileName: req.Filename,
 		ContentType: req.ContentType,
 		Size: req.Size,
-		StorageKey: id + filepath.Ext(req.Filename),
+		StorageKey: uploadPrefix + id + filepath.Ext(req.Filename),
 		Status: video.StatusUploading,
 	}
 
