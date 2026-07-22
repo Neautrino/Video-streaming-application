@@ -10,24 +10,24 @@ import (
 )
 
 type Config struct {
-	Addr string
+	Addr          string
 	MaxVideoBytes int64
 }
 
 type Server struct {
-	cfg Config
-	router *chi.Mux
-	logger *slog.Logger
-	repo *video.Repository
+	cfg     Config
+	router  *chi.Mux
+	logger  *slog.Logger
+	repo    *video.Repository
 	storage *storage.Client
 }
 
 func NewServer(cfg Config, logger *slog.Logger, repo *video.Repository, storage *storage.Client) *Server {
 	s := &Server{
-		cfg: cfg,
-		router: chi.NewRouter(),
-		logger: logger.With("component", "api"),
-		repo: repo,
+		cfg:     cfg,
+		router:  chi.NewRouter(),
+		logger:  logger.With("component", "api"),
+		repo:    repo,
 		storage: storage,
 	}
 
@@ -37,5 +37,5 @@ func NewServer(cfg Config, logger *slog.Logger, repo *video.Repository, storage 
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.router.ServeHTTP(w , r)
+	s.router.ServeHTTP(w, r)
 }

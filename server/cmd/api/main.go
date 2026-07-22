@@ -14,10 +14,10 @@ import (
 )
 
 func env(key, fallback string) string {
-      if v := os.Getenv(key); v != "" {
-              return v
-      }
-      return fallback
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 		logger.Error("Database Connection Failed", "err", err)
 		os.Exit(1)
 	}
-	
+
 	defer pool.Close()
 
 	if err = pool.Ping(context.Background()); err != nil {
@@ -48,7 +48,7 @@ func main() {
 	bucket := os.Getenv("S3_BUCKET")
 	if bucket == "" {
 		logger.Error("S3_BUCKET is required")
-		os.Exit(1) 
+		os.Exit(1)
 	}
 
 	store, err := storage.New(context.Background(), storage.Config{Bucket: bucket})

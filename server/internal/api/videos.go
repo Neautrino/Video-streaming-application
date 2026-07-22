@@ -13,10 +13,10 @@ import (
 )
 
 type createVideoRequest struct {
-	Title string `json:"title"`
+	Title       string `json:"title"`
 	Description string `json:"description"`
-	Filename string `json:"filename"`
-	Size int64 `json:"size"`
+	Filename    string `json:"filename"`
+	Size        int64  `json:"size"`
 	ContentType string `json:"content_type"`
 }
 
@@ -69,14 +69,14 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	id := hex.EncodeToString(buf)
 
 	v := &video.Video{
-		ID: id,
-		Title: req.Title,
-		Description: req.Description,
+		ID:               id,
+		Title:            req.Title,
+		Description:      req.Description,
 		OriginalFileName: req.Filename,
-		ContentType: req.ContentType,
-		Size: req.Size,
-		StorageKey: uploadPrefix + id + filepath.Ext(req.Filename),
-		Status: video.StatusUploading,
+		ContentType:      req.ContentType,
+		Size:             req.Size,
+		StorageKey:       uploadPrefix + id + filepath.Ext(req.Filename),
+		Status:           video.StatusUploading,
 	}
 
 	if err := s.repo.Create(r.Context(), v); err != nil {
