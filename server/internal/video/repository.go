@@ -19,3 +19,16 @@ func (r *Repository) Create(ctx context.Context, v *Video) error {
 	_, err := r.pool.Exec(ctx, query, v.ID, v.Title, v.Description, v.OriginalFileName, v.ContentType, v.Size, v.StorageKey, v.Status)
 	return err
 }
+
+func (r *Repository) MarkUploaded(ctx context.Context,id string, size int64) (bool, error) {
+	query := `UPDATE videos 
+	SET status = $1, size = $2, updated_at = now()
+	WHERE id = $3 AND status = $4
+	`
+	tag, err := r.pool.Exec(ctx, query, StatusUploaded, size, id, StatusUploading)
+	if err != nil {
+		return false, err
+	}
+
+	return tag.RowsAffected() > 0, nil
+}
