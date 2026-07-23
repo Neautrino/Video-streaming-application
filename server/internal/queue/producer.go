@@ -12,7 +12,7 @@ import (
 )
 
 type Producer struct {
-	client *sqs.Client
+	client   *sqs.Client
 	queueURL string
 }
 
@@ -23,31 +23,31 @@ func NewProducer(ctx context.Context, cfg Config) (*Producer, error) {
 	}
 
 	return &Producer{
-		client: sqs.NewFromConfig(awsCfg),
+		client:   sqs.NewFromConfig(awsCfg),
 		queueURL: cfg.QueueURL,
 	}, nil
 }
 
 func (p *Producer) Send(ctx context.Context, body string) error {
 	_, err := p.client.SendMessage(ctx, &sqs.SendMessageInput{
-		QueueUrl: aws.String(p.queueURL),
+		QueueUrl:    aws.String(p.queueURL),
 		MessageBody: aws.String(body),
 	})
-	return  err
+	return err
 }
 
 func (p *Producer) SendChunk(ctx context.Context, bodies []string) error {
 	entries := make([]types.SendMessageBatchRequestEntry, len(bodies))
 	for i, body := range bodies {
 		entries[i] = types.SendMessageBatchRequestEntry{
-			Id: aws.String(strconv.Itoa(i)),
+			Id:          aws.String(strconv.Itoa(i)),
 			MessageBody: aws.String(body),
 		}
 	}
 
 	out, err := p.client.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
 		QueueUrl: aws.String(p.queueURL),
-		Entries: entries,
+		Entries:  entries,
 	})
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (p *Producer) SendChunk(ctx context.Context, bodies []string) error {
 		return fmt.Errorf("%d of %d messages failed to send", len(out.Failed), len(bodies))
 	}
 
-	return  nil
+	return nil
 }
 
 func (p *Producer) SendBatch(ctx context.Context, bodies []string) error {
@@ -67,5 +67,5 @@ func (p *Producer) SendBatch(ctx context.Context, bodies []string) error {
 		}
 	}
 
-	return  nil
+	return nil
 }

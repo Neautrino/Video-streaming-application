@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/neautrino/video-streaming/internal/queue"
+	"github.com/neautrino/video-streaming/internal/storage"
 	"github.com/neautrino/video-streaming/internal/video"
 )
 
@@ -35,7 +36,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	defer pool.Close()
+
 	repo := video.NewRepository(pool)
+
+	bucket := os.Getenv("S3_BUCKET")
+	if bucket == "" {
+		logger.Error("S3_BUCKET is required")
+		os.Exit(1)
+	}
+
+	store, err := storage.New(context.Background(), storage.Config{Bucket: bucket})
+	if err != nil {
+		logger.Error("storage init failed", "err", err)
+		os.Exit(1)
+	}
 
 	consumer, err := queue.NewConsumer(ctx, queue.Config{
 		QueueURL: os.Getenv("SQS_UPLOADS_QUEUE_URL"),
@@ -43,6 +58,26 @@ func main() {
 	if err != nil {
 		logger.Error("SQS Uploads queue Connection Failed", "err", err)
 		os.Exit(1)
+	}
+
+	transcodeURL := os.Getenv("SQS_TRANSCODE_QUEUE_URL")
+	if transcodeURL == "" {
+		logger.Error("SQS_TRANSCODE_QUEUE_URL is required")
+		os.Exit(1)
+	}
+
+	producer, err := queue.NewProducer(ctx, queue.Config{QueueURL: transcodeURL})
+	if err != nil {
+		logger.Error("queue producer init failed", "err", err)
+		os.Exit(1)
+	}
+
+	h := &handler{
+		logger:   logger,
+		repo:     repo,
+		consumer: consumer,
+		producer: producer,
+		storage:  store,
 	}
 
 	for {
@@ -57,7 +92,7 @@ func main() {
 		}
 
 		for _, msg := range msgs {
-			handleMessage(ctx, logger, repo, consumer, msg)
+			h.handleMessage(ctx, msg)
 		}
 	}
 

@@ -20,7 +20,7 @@ func (r *Repository) Create(ctx context.Context, v *Video) error {
 	return err
 }
 
-func (r *Repository) MarkUploaded(ctx context.Context,id string, size int64) (bool, error) {
+func (r *Repository) MarkUploaded(ctx context.Context, id string, size int64) (bool, error) {
 	query := `UPDATE videos 
 	SET status = $1, size = $2, updated_at = now()
 	WHERE id = $3 AND status = $4

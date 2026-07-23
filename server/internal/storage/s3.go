@@ -43,3 +43,16 @@ func (c *Client) PresignPut(ctx context.Context, key string) (string, error) {
 
 	return req.URL, nil
 }
+
+func (c *Client) PresignGet(ctx context.Context, key string) (string, error) {
+	req, err := c.presign.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(c.bucket),
+		Key:    aws.String(key),
+	}, s3.WithPresignExpires(15*time.Minute))
+
+	if err != nil {
+		return "", err
+	}
+
+	return req.URL, nil
+}

@@ -14,5 +14,6 @@ func (s *Server) routes() {
 		AllowCredentials: false,
 		MaxAge:           3000,
 	}))
+
 	s.router.Post("/videos/upload", s.handleUpload)
 }
