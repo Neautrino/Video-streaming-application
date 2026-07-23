@@ -8,6 +8,8 @@ const (
 	StatusUploaded  Status = "uploaded"
 	StatusUploading Status = "uploading"
 	StatusFailed    Status = "failed"
+	StatusProcessing Status = "processing"
+	StatusProcessed Status = "processed"
 )
 
 type Video struct {

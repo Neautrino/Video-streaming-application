@@ -49,3 +49,29 @@ func (r *Repository) GetById(ctx context.Context, id string) (*Video, error) {
 
 	return &v, nil
 }
+
+func (r *Repository) MarkProcessing(ctx context.Context, id string) (bool, error) {
+	query := `UPDATE videos 
+	SET status = $1, updated_at = now()
+	WHERE id = $2 AND status = $3
+	`
+	tag, err := r.pool.Exec(ctx, query, StatusProcessing, id, StatusUploaded)
+	if err != nil {
+		return false, err
+	}
+
+	return tag.RowsAffected() > 0, nil
+}
+
+func (r *Repository) MarkProcessed(ctx context.Context, id string) (bool, error) {
+	query := `UPDATE videos 
+	SET status = $1, updated_at = now()
+	WHERE id = $2 AND status = $3
+	`
+	tag, err := r.pool.Exec(ctx, query, StatusProcessed, id, StatusProcessing)
+	if err != nil {
+		return false, err
+	}
+
+	return tag.RowsAffected() > 0, nil
+}
