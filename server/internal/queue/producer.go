@@ -36,7 +36,7 @@ func (p *Producer) Send(ctx context.Context, body string) error {
 	return  err
 }
 
-func (p *Producer) SendBatch(ctx context.Context, bodies []string) error {
+func (p *Producer) SendChunk(ctx context.Context, bodies []string) error {
 	entries := make([]types.SendMessageBatchRequestEntry, len(bodies))
 	for i, body := range bodies {
 		entries[i] = types.SendMessageBatchRequestEntry{
@@ -54,6 +54,17 @@ func (p *Producer) SendBatch(ctx context.Context, bodies []string) error {
 	}
 	if len(out.Failed) > 0 {
 		return fmt.Errorf("%d of %d messages failed to send", len(out.Failed), len(bodies))
+	}
+
+	return  nil
+}
+
+func (p *Producer) SendBatch(ctx context.Context, bodies []string) error {
+	for start := 0; start < len(bodies); start += 10 {
+		end := min(start+10, len(bodies))
+		if err := p.SendChunk(ctx, bodies[start:end]); err != nil {
+			return err
+		}
 	}
 
 	return  nil
