@@ -32,3 +32,20 @@ func (r *Repository) MarkUploaded(ctx context.Context, id string, size int64) (b
 
 	return tag.RowsAffected() > 0, nil
 }
+
+func (r *Repository) GetById(ctx context.Context, id string) (*Video, error) {
+	query := `SELECT id, title, description, original_filename, content_type, size, storage_key, status, created_at, updated_at
+	FROM videos WHERE id = $1
+	`
+	var v Video
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&v.ID, &v.Title, &v.Description, &v.OriginalFileName, &v.ContentType,
+		&v.Size, &v.StorageKey, &v.Status, &v.CreatedAt, &v.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &v, nil
+}

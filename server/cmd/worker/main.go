@@ -79,6 +79,8 @@ func main() {
 		producer: producer,
 		storage:  store,
 	}
+	
+	logger.Info("Worker Started Successfully")
 
 	for {
 		msgs, err := consumer.Receive(ctx)

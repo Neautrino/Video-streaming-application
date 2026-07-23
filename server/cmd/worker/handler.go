@@ -10,6 +10,7 @@ import (
 
 	"github.com/neautrino/video-streaming/internal/queue"
 	"github.com/neautrino/video-streaming/internal/storage"
+	"github.com/neautrino/video-streaming/internal/transcode"
 	"github.com/neautrino/video-streaming/internal/video"
 )
 
@@ -67,6 +68,26 @@ func (h *handler) handleMessage(
 
 		if updated {
 			h.logger.Info("video uploded", "video_id", id, "size", record.S3.Object.Size)
+
+			v, err := h.repo.GetById(ctx, id)
+			if err != nil {
+				h.logger.Error("feching video for prepare", "video_id", id, "err", err )
+				return
+			}
+
+			url, err := h.storage.PresignGet(ctx, v.StorageKey)
+			if err != nil {
+				h.logger.Error("presigning source url", "video_id", id, "err", err)
+				return
+			}
+
+			meta, err := transcode.Probe(ctx, url)
+			if err != nil {
+				h.logger.Error("probing video", "video_id", id, "err", err)
+				return
+			}
+
+			h.logger.Info("probed", "video_id", id, "duration", meta.Duration,"width", meta.Width, "height", meta.Height)
 		} else {
 			h.logger.Info("already processed, skipping", "video_id", id)
 		}
